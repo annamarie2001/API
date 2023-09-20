@@ -1,34 +1,11 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Sequelize, Model, DataTypes } = require('sequelize');
+const db = require('./db'); 
+const Joi = require('joi');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Database setup
-const sequelize = new Sequelize('postgres', 'postgres', 'anna2001', {
-  host: 'localhost',
-  dialect: 'postgres',
-});
-
-// Define the Driver model
-class Driver extends Model {}
-Driver.init({
-  driver_id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  driver_name: DataTypes.STRING,
-  fleet_id: { type: DataTypes.STRING, allowNull: false },
-  location: DataTypes.JSONB,
-  vehicle_groups: DataTypes.ARRAY(DataTypes.STRING),
-}, {
-  sequelize,
-  modelName: 'Driver', 
-  tableName: 'drivers', 
-  timestamps: false, 
-});
 
 // Middleware
 app.use(bodyParser.json());
@@ -51,49 +28,72 @@ app.post('/api/drivers', async (req, res) => {
   try {
     const { driverName, fleetId, location, vehicleGroups } = req.body;
 
-    // Create a new driver record
-    const driver = await Driver.create({
-      driver_name: driverName, 
-      fleet_id: fleetId, 
-      location,
-      vehicle_groups: vehicleGroups, 
-    });
+	  // Define a schema for validating the request body
+    const schema = Joi.object({
+      driverName: Joi.string().max(255).required(),
+      fleetId: Joi.string().max(255).required(),
+      location: Joi.object().keys({
+         City: Joi.string().max(255).required(),
+         'Pincode': Joi.string().max(10).required(),
+  }),
+      vehicleGroups: Joi.array().items(Joi.string()),
+});	    
+    
 
-    // Send a success response with the created driver
+    // Validate the request body
+    const { error } = schema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const query = `
+      INSERT INTO drivers (driver_name, fleet_id, location, vehicle_groups)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+
+    const values = [driverName, fleetId, location, vehicleGroups];
+
+    const driver = await db.one(query, values);
+
     res.status(201).json(driver);
   } catch (error) {
-    // Handle any errors and send an error response
     console.error('Error creating driver:', error);
     res.status(500).json({ error: 'Unable to create driver' });
   }
 });
 
-// Routes
-//app.get('/drivers', async (req, res) => {
-//  try {
-//    const drivers = await Driver.findAll({ order: [['driver_id', 'ASC']] });
-//    res.json(drivers);
-//  } catch (error) {
-//    console.error(error);
-//    res.status(500).json({ error: 'Internal Server Error' });
-//  }
-//});
-
+// GET request to retrieve drivers
 app.get('/drivers', async (req, res) => {
   try {
-    let order = [['driver_name', 'ASC']]; 
+    let order = 'driver_name ASC'; // Default sorting order
 
     const sortBy = req.query.sort_by;
     const sortOrder = req.query.sort_order;
+// Define a schema for validating query parameters
+    const querySchema = Joi.object({
+      sort_by: Joi.string().valid('driver_name', 'fleet_id', 'location', 'vehicle_groups'),
+      sort_order: Joi.string().valid('asc', 'desc'),
+    });
 
+    // Validate the query parameters
+    const { error } = querySchema.validate(req.query);
+
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    } 
     if (sortBy && sortOrder) {
-      order = [[sortBy, sortOrder.toUpperCase()]]; 
+      order = `${sortBy} ${sortOrder.toUpperCase()}`;
     }
 
-    const drivers = await Driver.findAll({
-      order,
-    });
-    
+    const query = `
+      SELECT * FROM drivers
+      ORDER BY ${order};
+    `;
+
+    const drivers = await db.any(query);
+
     res.json(drivers);
   } catch (error) {
     console.error(error);
@@ -101,33 +101,46 @@ app.get('/drivers', async (req, res) => {
   }
 });
 
-
+// PUT request to update a driver
 app.put('/drivers/:driverId', async (req, res) => {
   const driverId = req.params.driverId;
   console.log('Received PUT request for driver ID:', driverId);
 
   try {
-    // Extract all the fields from the request body
     const { driverName, fleetId, location, vehicleGroups } = req.body;
+ // Define a schema for validating the request body
+    const bodySchema = Joi.object({
+      driverName: Joi.string().max(255).required(),
+      fleetId: Joi.string().max(255).required(),
+      location: Joi.object().keys({
+         City: Joi.string().max(255).required(),
+         'Pincode': Joi.string().max(10).required(),
+  }),
+      vehicleGroups: Joi.array().items(Joi.string()),
+});
+    
 
-    // Define an object with the fields to update
-    const updatedFields = {
-      driver_name: driverName,
-      fleet_id: fleetId,
-      location: location,
-      vehicle_groups: vehicleGroups,
-    };
+    // Validate the request body
+    const { error } = bodySchema.validate(req.body);
 
-    // Update the driver record with the specified fields
-    const [numUpdatedRows, updatedDrivers] = await Driver.update(updatedFields, {
-      where: { driver_id: driverId },
-      returning: true, // Return the updated record(s)
-    });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+    const query = `
+      UPDATE drivers
+      SET driver_name = $1, fleet_id = $2, location = $3, vehicle_groups = $4
+      WHERE driver_id = $5
+      RETURNING *;
+    `;
 
-    if (numUpdatedRows === 0) {
+    const values = [driverName, fleetId, location, vehicleGroups, driverId];
+
+    const updatedDriver = await db.oneOrNone(query, values);
+
+    if (!updatedDriver) {
       res.status(404).json({ error: 'Driver not found' });
     } else {
-      res.json({ message: 'Driver updated successfully', updatedDriver: updatedDrivers[0] });
+      res.json({ message: 'Driver updated successfully', updatedDriver });
     }
   } catch (error) {
     console.error(error);
@@ -135,11 +148,28 @@ app.put('/drivers/:driverId', async (req, res) => {
   }
 });
 
+// DELETE request to delete a driver
 app.delete('/drivers/:driverId', async (req, res) => {
   const driverId = req.params.driverId;
+const pathParamSchema = Joi.number().integer().positive().required();
+
+  // Validate the path parameter
+  const { error } = pathParamSchema.validate(driverId);
+
+  if (error) {
+    return res.status(400).json({ error: 'Invalid driverId' });
+  }
+
   try {
-    const deletedDriver = await Driver.destroy({ where: { driver_id: driverId } });
-    if (deletedDriver === 0) {
+    const query = `
+      DELETE FROM drivers
+      WHERE driver_id = $1
+      RETURNING *;
+    `;
+
+    const deletedDriver = await db.oneOrNone(query, driverId);
+
+    if (!deletedDriver) {
       res.status(404).json({ error: 'Driver not found' });
     } else {
       res.json({ message: 'Driver deleted successfully' });
@@ -149,6 +179,7 @@ app.delete('/drivers/:driverId', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 // Start the server
 app.listen(port, () => {
