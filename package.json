@@ -13,10 +13,15 @@
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
     "joi": "^17.10.2",
+<<<<<<< HEAD
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "path": "^0.12.7",
     "pg-promise": "^11.5.4",
     "swagger-ui-express": "^5.0.0"
+=======
+    "jsonwebtoken": "^9.0.2",
+    "pg-promise": "^11.5.4"
+>>>>>>> b187ecfd5dc3583df91d1498cf38914ef52cb752
   }
 }

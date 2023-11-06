@@ -3,16 +3,20 @@ const bodyParser = require('body-parser');
 const db = require('./db');
 const Joi = require('joi');
 const jwt = require('jsonwebtoken');
+<<<<<<< HEAD
 const swaggerUi = require('swagger-ui-express');
 const jsYaml = require('js-yaml');
 const fs = require('fs');
 const path = require('path');
+=======
+>>>>>>> b187ecfd5dc3583df91d1498cf38914ef52cb752
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 const JWT_SECRET_KEY = 'your_secret_key';
 
+<<<<<<< HEAD
 
 // Load your OpenAPI YAML content
 const openApiDocument = jsYaml.load(fs.readFileSync('openapi.yaml', 'utf8'));
@@ -37,6 +41,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
 // Export the Express app
 module.exports = app;
+=======
+>>>>>>> b187ecfd5dc3583df91d1498cf38914ef52cb752
 
 // Middleware
 app.use(bodyParser.json());
@@ -47,6 +53,7 @@ const verifyToken = (req, res, next) => {
   if (!token) {
     return res.status(401).json({ error: 'Access denied. Token is missing.' });
   }
+<<<<<<< HEAD
 
   jwt.verify(token.replace('Bearer ', ''), JWT_SECRET_KEY, (err, decoded) => {
     if (err) {
@@ -75,6 +82,36 @@ app.get('/testToken', async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
 
+=======
+
+  jwt.verify(token.replace('Bearer ', ''), JWT_SECRET_KEY, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Invalid token.' });
+    }
+
+    // Store the decoded user information in the request object
+    req.user = decoded;
+    next();
+  });
+};
+
+
+app.get('/testToken', async (req, res) => {
+  try {
+    const driverId = req.query.driverId; // Extract driverId from query parameters
+
+    if (!driverId) {
+      return res.status(400).json({ error: 'driverId parameter is required.' });
+    }
+
+    // Fetch user data from the database using the provided driverId
+    const userData = await getUserFromDatabase(driverId);
+
+    if (!userData) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+>>>>>>> b187ecfd5dc3583df91d1498cf38914ef52cb752
     // Use the user data to generate a token
     const token = jwt.sign(userData, JWT_SECRET_KEY, { expiresIn: '1h' });
     res.json({ success: true, token });
