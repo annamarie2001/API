@@ -1,0 +1,21 @@
+components:
+  schemas:
+    DriverRequestBody:
+      type: object
+      properties:
+        driverName:
+          type: string
+        fleetId:
+          type: string
+        location:
+          type: object
+          properties:
+            City:
+              type: string
+            Pincode:
+              type: string
+        vehicleGroups:
+          type: array
+          items:
+            type: string
+

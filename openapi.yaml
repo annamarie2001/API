@@ -1,0 +1,125 @@
+openapi: 3.0.0
+info:
+  title: Node Project to develop APIs
+  description: To add, delete, update, and remove drivers
+  version: 1.0.0
+servers:
+  - url: http://192.168.42.131:3000
+
+components:
+  external: {}  
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+paths:
+  /api/drivers:
+    post:
+      summary: Create a new driver
+      operationId: createDriver
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/external/schemas/DriverRequestBody'  
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /drivers:
+    get:
+      summary: Get a list of drivers
+      operationId: getDrivers
+      parameters:
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [driver_name, fleet_id, location, vehicle_groups]
+          description: Sort by field
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+          description: Sort order
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /drivers/{driverId}:
+    put:
+      summary: Update a driver
+      operationId: updateDriver
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID of the driver to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/external/schemas/DriverRequestBody'  
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+
+    delete:
+      summary: Delete a driver
+      operationId: deleteDriver
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID of the driver to delete
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+
