@@ -3,20 +3,15 @@ const bodyParser = require('body-parser');
 const db = require('./db');
 const Joi = require('joi');
 const jwt = require('jsonwebtoken');
-<<<<<<< HEAD
 const swaggerUi = require('swagger-ui-express');
 const jsYaml = require('js-yaml');
 const fs = require('fs');
 const path = require('path');
-=======
->>>>>>> b187ecfd5dc3583df91d1498cf38914ef52cb752
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 const JWT_SECRET_KEY = 'your_secret_key';
-
-<<<<<<< HEAD
 
 // Load your OpenAPI YAML content
 const openApiDocument = jsYaml.load(fs.readFileSync('openapi.yaml', 'utf8'));
@@ -26,10 +21,7 @@ const externalComponents = jsYaml.load(fs.readFileSync('external.yaml', 'utf8'))
 
 // Manually merge the external components into your main document's 'components'
 if (externalComponents.components) {
-  openApiDocument.components.external = Object.assign(
-    openApiDocument.components.external || {},
-    externalComponents.components
-  );
+  openApiDocument.components.external = Object.assign(openApiDocument.components.external || {}, externalComponents.components);
 }
 
 // Add the console.log statement here to log the merged document
@@ -38,11 +30,8 @@ console.log(JSON.stringify(openApiDocument, null, 2));
 // Serve the OpenAPI documentation using Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
-
 // Export the Express app
 module.exports = app;
-=======
->>>>>>> b187ecfd5dc3583df91d1498cf38914ef52cb752
 
 // Middleware
 app.use(bodyParser.json());
@@ -53,7 +42,6 @@ const verifyToken = (req, res, next) => {
   if (!token) {
     return res.status(401).json({ error: 'Access denied. Token is missing.' });
   }
-<<<<<<< HEAD
 
   jwt.verify(token.replace('Bearer ', ''), JWT_SECRET_KEY, (err, decoded) => {
     if (err) {
@@ -65,7 +53,6 @@ const verifyToken = (req, res, next) => {
     next();
   });
 };
-
 
 app.get('/testToken', async (req, res) => {
   try {
@@ -82,36 +69,6 @@ app.get('/testToken', async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-=======
-
-  jwt.verify(token.replace('Bearer ', ''), JWT_SECRET_KEY, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ error: 'Invalid token.' });
-    }
-
-    // Store the decoded user information in the request object
-    req.user = decoded;
-    next();
-  });
-};
-
-
-app.get('/testToken', async (req, res) => {
-  try {
-    const driverId = req.query.driverId; // Extract driverId from query parameters
-
-    if (!driverId) {
-      return res.status(400).json({ error: 'driverId parameter is required.' });
-    }
-
-    // Fetch user data from the database using the provided driverId
-    const userData = await getUserFromDatabase(driverId);
-
-    if (!userData) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
->>>>>>> b187ecfd5dc3583df91d1498cf38914ef52cb752
     // Use the user data to generate a token
     const token = jwt.sign(userData, JWT_SECRET_KEY, { expiresIn: '1h' });
     res.json({ success: true, token });
@@ -135,23 +92,21 @@ async function getUserFromDatabase(driverId) {
   }
 }
 
-
 // Create a new driver
 app.post('/api/drivers', verifyToken, async (req, res) => {
   try {
     const { driverName, fleetId, location, vehicleGroups } = req.body;
 
-          // Define a schema for validating the request body
+    // Define a schema for validating the request body
     const schema = Joi.object({
       driverName: Joi.string().max(255).required(),
       fleetId: Joi.string().max(255).required(),
       location: Joi.object().keys({
-         City: Joi.string().max(255).required(),
-         'Pincode': Joi.string().max(10).required(),
-  }),
+        City: Joi.string().max(255).required(),
+        'Pincode': Joi.string().max(10).required(),
+      }),
       vehicleGroups: Joi.array().items(Joi.string()),
-});
-
+    });
 
     // Validate the request body
     const { error } = schema.validate(req.body);
@@ -184,7 +139,7 @@ app.get('/drivers', verifyToken, async (req, res) => {
 
     const sortBy = req.query.sort_by;
     const sortOrder = req.query.sort_order;
-// Define a schema for validating query parameters
+    // Define a schema for validating query parameters
     const querySchema = Joi.object({
       sort_by: Joi.string().valid('driver_name', 'fleet_id', 'location', 'vehicle_groups'),
       sort_order: Joi.string().valid('asc', 'desc'),
@@ -221,17 +176,16 @@ app.put('/drivers/:driverId', verifyToken, async (req, res) => {
 
   try {
     const { driverName, fleetId, location, vehicleGroups } = req.body;
- // Define a schema for validating the request body
+    // Define a schema for validating the request body
     const bodySchema = Joi.object({
       driverName: Joi.string().max(255).required(),
       fleetId: Joi.string().max(255).required(),
       location: Joi.object().keys({
-         City: Joi.string().max(255).required(),
-         'Pincode': Joi.string().max(10).required(),
-  }),
+        City: Joi.string().max(255).required(),
+        'Pincode': Joi.string().max(10).required(),
+      }),
       vehicleGroups: Joi.array().items(Joi.string()),
-});
-
+    });
 
     // Validate the request body
     const { error } = bodySchema.validate(req.body);
@@ -264,7 +218,7 @@ app.put('/drivers/:driverId', verifyToken, async (req, res) => {
 // DELETE request to delete a driver
 app.delete('/drivers/:driverId', verifyToken, async (req, res) => {
   const driverId = req.params.driverId;
-const pathParamSchema = Joi.number().integer().positive().required();
+  const pathParamSchema = Joi.number().integer().positive().required();
 
   // Validate the path parameter
   const { error } = pathParamSchema.validate(driverId);
@@ -292,7 +246,6 @@ const pathParamSchema = Joi.number().integer().positive().required();
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
 
 // Start the server
 app.listen(port, () => {
